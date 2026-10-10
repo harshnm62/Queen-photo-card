@@ -30,7 +30,7 @@
     background-attachment: fixed;
     padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
   }
-  main { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  main { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 14px; }
   h1 {
     margin: 4px 0 0;
     font-family: Georgia, "Times New Roman", serif;
@@ -44,7 +44,9 @@
 
   .stage {
     position: relative;
-    width: min(100%, 360px);
+    /* keep the whole card plus the buttons on one phone screen */
+    width: min(100%, 360px, max(200px, calc((100vh - 360px) * 630 / 1020)));
+    width: min(100%, 360px, max(200px, calc((100svh - 360px) * 630 / 1020)));
     aspect-ratio: 630 / 1020;
     border-radius: 18px;
     box-shadow: 0 14px 40px rgba(0, 0, 0, .45), 0 0 0 3px rgba(245, 201, 106, .55);
@@ -55,10 +57,9 @@
     display: block;
     width: 100%;
     height: 100%;
-    touch-action: none;
     cursor: pointer;
   }
-  #card.has-photo { cursor: grab; }
+  #card.has-photo { cursor: grab; touch-action: none; }
   #card.dragging { cursor: grabbing; }
   .hint {
     position: absolute;
@@ -78,7 +79,7 @@
 
   .suits { display: flex; gap: 12px; justify-content: center; }
   .suit {
-    width: 64px; height: 64px;
+    width: 58px; height: 58px;
     border-radius: 50%;
     border: 3px solid transparent;
     background: #fff;
@@ -117,7 +118,8 @@
   .btn.primary { background: linear-gradient(180deg, var(--gold), var(--gold-dark)); color: var(--ink); box-shadow: 0 6px 16px rgba(0, 0, 0, .3); }
   .btn.secondary { background: rgba(255, 255, 255, .14); color: #fff; border: 2px solid rgba(255, 255, 255, .35); }
   .btn.big { min-height: 68px; font-size: 20px; }
-  input[type=file] { display: none; }
+  input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+  label.btn { user-select: none; -webkit-user-select: none; }
   .hidden { display: none !important; }
   footer { opacity: .6; font-size: 13px; margin-top: 4px; text-align: center; }
 </style>
@@ -147,8 +149,8 @@
 
   <div class="buttons">
     <div class="row">
-      <button class="btn primary big" id="takeBtn">📸 Take photo</button>
-      <button class="btn secondary big" id="pickBtn">🖼️ Upload</button>
+      <label class="btn primary big" id="takeBtn" for="cameraInput" role="button">📸 Take photo</label>
+      <label class="btn secondary big" id="pickBtn" for="fileInput" role="button">🖼️ Photos</label>
     </div>
     <div class="row hidden" id="exportRow">
       <button class="btn primary" id="downloadBtn">⬇️ Download card</button>
@@ -381,8 +383,6 @@
   // ---------- photo input ----------
   const cameraInput = document.getElementById('cameraInput');
   const fileInput = document.getElementById('fileInput');
-  document.getElementById('takeBtn').addEventListener('click', () => cameraInput.click());
-  document.getElementById('pickBtn').addEventListener('click', () => fileInput.click());
   [cameraInput, fileInput].forEach((inp) => inp.addEventListener('change', () => {
     const f = inp.files && inp.files[0];
     inp.value = '';
@@ -410,6 +410,7 @@
       canvas.classList.add('has-photo');
       zoomRow.classList.add('show');
       exportRow.classList.remove('hidden');
+      setTimeout(() => exportRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
       document.getElementById('takeBtn').innerHTML = '📸 Retake';
       render();
       hint.classList.add('show');
@@ -484,7 +485,7 @@
   canvas.addEventListener('pointerup', endPointer);
   canvas.addEventListener('pointercancel', endPointer);
 
-  canvas.addEventListener('click', () => { if (!photo) cameraInput.click(); });
+  canvas.addEventListener('click', () => { if (!photo) fileInput.click(); });
 
   canvas.addEventListener('wheel', (e) => {
     if (!photo) return;
@@ -498,7 +499,7 @@
   });
 
   // iOS Safari: stop the page from rubber-banding while pinching the card
-  canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+  canvas.addEventListener('touchmove', (e) => { if (photo) e.preventDefault(); }, { passive: false });
 
   // ---------- export ----------
   function getBlob() {
