@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#3b0d3a">
-<title>Queen Card</title>
+<title>Jheel's Birthday Card</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%91%3C/text%3E%3C/svg%3E">
 <style>
   :root {
@@ -45,8 +45,8 @@
   .stage {
     position: relative;
     /* keep the whole card plus the buttons on one phone screen */
-    width: min(100%, 360px, max(200px, calc((100vh - 360px) * 630 / 1020)));
-    width: min(100%, 360px, max(200px, calc((100svh - 360px) * 630 / 1020)));
+    width: min(100%, 360px, max(200px, calc((100vh - 400px) * 630 / 1020)));
+    width: min(100%, 360px, max(200px, calc((100svh - 400px) * 630 / 1020)));
     aspect-ratio: 630 / 1020;
     border-radius: 18px;
     box-shadow: 0 14px 40px rgba(0, 0, 0, .45), 0 0 0 3px rgba(245, 201, 106, .55);
@@ -93,6 +93,16 @@
   .suit[aria-pressed="true"] { border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 0 4px rgba(245, 201, 106, .35), 0 6px 16px rgba(0, 0, 0, .35); }
   .suit:active { transform: scale(.95); }
 
+  .themes { display: flex; gap: 8px; width: min(100%, 380px); background: rgba(0, 0, 0, .22); padding: 5px; border-radius: 18px; }
+  .theme {
+    flex: 1; min-height: 50px; border: 0; border-radius: 14px; cursor: pointer;
+    background: transparent; color: #fff; font: 700 16px/1 inherit; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 6px;
+    transition: background .15s, color .15s;
+  }
+  .theme .ico { font-size: 20px; display: inline-grid; place-items: center; width: 24px; height: 24px; }
+  .theme .ico svg { width: 24px; height: 24px; }
+  .theme[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 3px 10px rgba(0, 0, 0, .25); }
   .zoom { display: none; width: min(100%, 360px); align-items: center; gap: 10px; font-size: 20px; }
   .zoom.show { display: flex; }
   .zoom input { flex: 1; accent-color: var(--gold); height: 32px; }
@@ -127,10 +137,16 @@
 <body>
 <main>
   <h1>👑 Queen of Hearts</h1>
-  <p class="sub">Snap a photo and become the queen</p>
+  <p class="sub">Jheel's Birthday 2026 🎉</p>
+
+  <div class="themes" role="group" aria-label="Pick a card style">
+    <button class="theme" data-theme="queen" aria-pressed="true"><span class="ico">👑</span>Queen</button>
+    <button class="theme" data-theme="seahorse" aria-pressed="false"><span class="ico"></span>Seahorse</button>
+    <button class="theme" data-theme="libra" aria-pressed="false"><span class="ico"></span>Libra</button>
+  </div>
 
   <div class="stage">
-    <canvas id="card" width="630" height="1020" aria-label="Your queen card preview"></canvas>
+    <canvas id="card" width="630" height="1020" aria-label="Your card preview"></canvas>
     <div class="hint" id="hint">Drag to move · pinch to zoom</div>
   </div>
 
@@ -138,13 +154,6 @@
     <span aria-hidden="true">−</span>
     <input type="range" id="zoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom">
     <span aria-hidden="true">+</span>
-  </div>
-
-  <div class="suits" role="group" aria-label="Pick a suit">
-    <button class="suit" data-suit="hearts" aria-pressed="true" aria-label="Hearts"></button>
-    <button class="suit" data-suit="diamonds" aria-pressed="false" aria-label="Diamonds"></button>
-    <button class="suit" data-suit="clubs" aria-pressed="false" aria-label="Clubs"></button>
-    <button class="suit" data-suit="spades" aria-pressed="false" aria-label="Spades"></button>
   </div>
 
   <div class="buttons">
@@ -156,6 +165,13 @@
       <button class="btn primary" id="downloadBtn">⬇️ Download card</button>
       <button class="btn secondary hidden" id="shareBtn">📤 Share</button>
     </div>
+  </div>
+
+  <div class="suits" role="group" aria-label="Pick a suit">
+    <button class="suit" data-suit="hearts" aria-pressed="true" aria-label="Hearts"></button>
+    <button class="suit" data-suit="diamonds" aria-pressed="false" aria-label="Diamonds"></button>
+    <button class="suit" data-suit="clubs" aria-pressed="false" aria-label="Clubs"></button>
+    <button class="suit" data-suit="spades" aria-pressed="false" aria-label="Spades"></button>
   </div>
 
   <input type="file" id="cameraInput" accept="image/*" capture="environment">
@@ -287,58 +303,220 @@
     oy = Math.min(my, Math.max(-my, oy));
   }
 
+  // ---------- seahorse + libra artwork (SVG paths in a 100x100 box) ----------
+  const SEAHORSE_BODY = new Path2D('M14 18.5L28 16C30 8 40 3 50 7C57 10 60 18 56 26C54 29 54 31 56 33C66 40 68 54 62 66C60 72 58 78 55 82C50 80 44 74 40 66C36 58 37 48 42 42C44 38 44 34 40 31C36 28 32 27 28 26L14 25.5C11 25.5 11 18.5 14 18.5Z' +
+    'M42 6L44 0L47 6ZM48 7L52 2L53 9ZM63 46C73 46 75 58 65 61Z');
+  const SEAHORSE_TAIL = new Path2D('M57 78C58 88 54 96 46 96C39 96 37 89 42 87C45 86 47 89 45 91');
+  const SEAHORSE_RIDGES = new Path2D('M43 47Q52 49 61 45M41 55Q52 57 63 53M42 63Q52 65 62 62M46 71Q52 73 59 71M66 50L70 51M66 55L70 56');
+  const LIBRA = new Path2D('M15 80L85 80M15 64L33 64C22 52 30 27 50 27C70 27 78 52 67 64L85 64');
+
+  // x,y = top-left of the 100x100 box, k = scale (1 = 100px)
+  function drawSeahorse(c, x, y, k, color, bg, detail = true) {
+    c.save();
+    c.translate(x, y);
+    c.scale(k, k);
+    c.fillStyle = color;
+    c.fill(SEAHORSE_BODY);
+    c.strokeStyle = color;
+    c.lineWidth = 6;
+    c.lineCap = 'round';
+    c.stroke(SEAHORSE_TAIL);
+    if (detail) {
+      c.globalAlpha = 0.45;
+      c.strokeStyle = bg;
+      c.lineWidth = 1.6;
+      c.stroke(SEAHORSE_RIDGES);
+      c.globalAlpha = 1;
+      c.fillStyle = bg;
+      c.beginPath();
+      c.arc(44, 13, 2.4, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.restore();
+  }
+  function drawLibra(c, x, y, k, color) {
+    c.save();
+    c.translate(x, y);
+    c.scale(k, k);
+    c.strokeStyle = color;
+    c.lineWidth = 7;
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    c.stroke(LIBRA);
+    c.restore();
+  }
+  function drawSparkle(c, cx, cy, r, color) {
+    c.save();
+    c.translate(cx, cy);
+    c.beginPath();
+    c.moveTo(0, -r);
+    c.quadraticCurveTo(0, 0, r, 0);
+    c.quadraticCurveTo(0, 0, 0, r);
+    c.quadraticCurveTo(0, 0, -r, 0);
+    c.quadraticCurveTo(0, 0, 0, -r);
+    c.fillStyle = color;
+    c.fill();
+    c.restore();
+  }
+
+  const SEA = { light: '#14a3a8', dark: '#0a4f7a', coral: '#ff8a6b' };
+  const NIGHT = { light: '#4a2c6e', dark: '#1f1747', gold: '#f5c96a' };
+
+  const THEMES = {
+    queen: {
+      title: () => '👑 Queen of ' + SUITS[suit].name,
+      file: () => 'queen-of-' + suit,
+      accent: () => SUITS[suit].color,
+      border: () => '#fff',
+      placeholder: ['#fbe3ec', '#f7d58f'],
+      bigIcon(c) { drawSuit(c, suit, W / 2, H / 2 - 60, 260, SUITS[suit].color + '33'); },
+      tab(c) {
+        const color = SUITS[suit].color;
+        c.fillStyle = color;
+        c.textAlign = 'center';
+        c.textBaseline = 'alphabetic';
+        c.font = 'bold 88px Georgia, "Times New Roman", Times, serif';
+        c.fillText('Q', TAB_CX, 106);
+        drawSuit(c, suit, TAB_CX, 170, 54, color);
+      },
+      decorate() {},
+      caption: { bg: '#fff', fg: () => SUITS[suit].color, icon: (c, x, y, h) => drawSuit(c, suit, x + h / 2, y, h, SUITS[suit].color) },
+    },
+    seahorse: {
+      title: () => '🌊 Seahorse Card',
+      file: () => 'seahorse-card',
+      accent: () => '#ffffff',
+      border: (c) => { const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, SEA.light); g.addColorStop(1, SEA.dark); return g; },
+      placeholder: ['#c9f1ef', '#86cde3'],
+      bigIcon(c) { drawSeahorse(c, W / 2 - 150, H / 2 - 230, 3, SEA.dark + '30', '#000', false); },
+      tab(c) {
+        drawSeahorse(c, 20, 52, 1.3, SEA.coral, SEA.light);
+        c.strokeStyle = 'rgba(255,255,255,.8)';
+        c.lineWidth = 2.5;
+        [[100, 46, 6], [109, 30, 4], [96, 22, 3]].forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.stroke(); });
+      },
+      decorate(c) {
+        // little bubbles floating in the border
+        c.strokeStyle = 'rgba(255,255,255,.65)';
+        c.lineWidth = 2;
+        borderSpots(23).forEach(([x, y], i) => { c.beginPath(); c.arc(x, y, 3 + (i * 7 % 4), 0, Math.PI * 2); c.stroke(); });
+      },
+      caption: { bg: '#fff', fg: () => SEA.dark, icon: (c, x, y, h) => drawSeahorse(c, x - h * 0.12, y - h / 2, h / 100, SEA.coral, '#fff', false) },
+    },
+    libra: {
+      title: () => '✨ Libra Card',
+      file: () => 'libra-card',
+      accent: () => NIGHT.gold,
+      border: (c) => { const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, NIGHT.light); g.addColorStop(1, NIGHT.dark); return g; },
+      placeholder: ['#e4dcfa', '#f6e2b3'],
+      bigIcon(c) { drawLibra(c, W / 2 - 150, H / 2 - 260, 3, NIGHT.light + '40'); },
+      tab(c) {
+        drawLibra(c, TAB_CX - 50 * 1.1, 22, 1.1, NIGHT.gold);
+        drawSparkle(c, TAB_CX, 158, 20, NIGHT.gold);
+        drawSparkle(c, TAB_CX + 26, 132, 8, NIGHT.gold);
+      },
+      decorate(c) {
+        borderSpots(29).forEach(([x, y], i) => drawSparkle(c, x, y, 4 + (i * 5 % 4), 'rgba(245,201,106,.85)'));
+      },
+      caption: { bg: NIGHT.dark, fg: () => NIGHT.gold, icon: (c, x, y, h) => drawLibra(c, x - h * 0.15, y - h * 0.55, h / 100 * 1.1, NIGHT.gold) },
+    },
+  };
+  let theme = 'queen';
+  const TAB_CX = 30 + (TAB.w - 30) / 2 + 2;
+  const CAPTION = "Jheel's Birthday 2026";
+
+  // evenly spaced points along the middle of the border, skipping the two corner tabs
+  function borderSpots(n) {
+    const m = 15, pts = [];
+    const per = 2 * (W - 2 * m) + 2 * (H - 2 * m);
+    for (let i = 0; i < n; i++) {
+      let d = (i + 0.5) * per / n;
+      let x, y;
+      if (d < W - 2 * m) { x = m + d; y = m; }
+      else if ((d -= W - 2 * m) < H - 2 * m) { x = W - m; y = m + d; }
+      else if ((d -= H - 2 * m) < W - 2 * m) { x = W - m - d; y = H - m; }
+      else { d -= W - 2 * m; x = m; y = H - m - d; }
+      const inTab = (x < TAB.w + 10 && y < TAB.h + 10) || (x > W - TAB.w - 10 && y > H - TAB.h - 10);
+      if (!inTab) pts.push([x, y]);
+    }
+    return pts;
+  }
+
   // ---------- rendering ----------
   function drawPlaceholder(c) {
+    const t = THEMES[theme];
     const g = c.createLinearGradient(INNER.x, INNER.y, INNER.x + INNER.w, INNER.y + INNER.h);
-    g.addColorStop(0, '#fbe3ec');
-    g.addColorStop(1, '#f7d58f');
+    g.addColorStop(0, t.placeholder[0]);
+    g.addColorStop(1, t.placeholder[1]);
     c.fillStyle = g;
     c.fillRect(INNER.x, INNER.y, INNER.w, INNER.h);
-    // big faint suit
-    drawSuit(c, suit, W / 2, H / 2 - 60, 260, SUITS[suit].color + '33');
-    c.fillStyle = '#5a1840';
+    t.bigIcon(c);
+    c.fillStyle = '#4a1840';
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.font = '600 38px -apple-system, "Segoe UI", Roboto, sans-serif';
-    c.fillText('Tap to add', W / 2, H / 2 + 140);
-    c.fillText('your photo', W / 2, H / 2 + 188);
+    c.fillText('Tap to add', W / 2, H / 2 + 110);
+    c.fillText('your photo', W / 2, H / 2 + 158);
     c.font = '72px sans-serif';
-    c.fillText('📸', W / 2, H / 2 + 280);
+    c.fillText('📸', W / 2, H / 2 + 248);
   }
 
-  function drawIndex(c) {
-    const color = SUITS[suit].color;
-    // white tab that merges into the border
-    c.beginPath();
+  function tabPath(c) {
     c.moveTo(0, 0);
     c.lineTo(TAB.w, 0);
     c.lineTo(TAB.w, TAB.h - TAB.r);
     c.arcTo(TAB.w, TAB.h, TAB.w - TAB.r, TAB.h, TAB.r);
     c.lineTo(0, TAB.h);
     c.closePath();
-    c.fillStyle = '#fff';
-    c.fill();
+  }
 
-    const cx = 30 + (TAB.w - 30) / 2 + 2;
-    c.fillStyle = color;
-    c.textAlign = 'center';
-    c.textBaseline = 'alphabetic';
-    c.font = 'bold 88px Georgia, "Times New Roman", Times, serif';
-    c.fillText('Q', cx, 106);
-    drawSuit(c, suit, cx, 170, 54, color);
+  function drawCaption(c) {
+    const cap = THEMES[theme].caption;
+    const h = 54, icon = 30, gap = 10, pad = 22;
+    c.font = 'italic 600 29px Georgia, "Times New Roman", Times, serif';
+    const tw = c.measureText(CAPTION).width;
+    const w = pad * 2 + icon + gap + tw;
+    // centre in the space left of the bottom-right corner tab
+    const cx = (INNER.x + (W - TAB.w)) / 2;
+    const cy = INNER.y + INNER.h - 46;
+    const x = cx - w / 2;
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,.28)';
+    c.shadowBlur = 10;
+    c.shadowOffsetY = 3;
+    roundRectPath(c, x, cy - h / 2, w, h, h / 2);
+    c.fillStyle = cap.bg;
+    c.fill();
+    c.restore();
+    cap.icon(c, x + pad, cy, icon);
+    c.fillStyle = cap.fg();
+    c.textAlign = 'left';
+    c.textBaseline = 'middle';
+    c.fillText(CAPTION, x + pad + icon + gap, cy + 1);
   }
 
   function render() {
     const c = ctx;
+    const t = THEMES[theme];
     c.save();
     c.setTransform(1, 0, 0, 1, 0, 0);
-    c.fillStyle = '#fff';
+    c.fillStyle = t.border(c);
     c.fillRect(0, 0, W, H);
+    t.decorate(c);
 
-    // photo window
+    // photo window: rounded inner rect minus the two corner tabs
     c.save();
     roundRectPath(c, INNER.x, INNER.y, INNER.w, INNER.h, INNER.r);
     c.clip();
+    c.beginPath();
+    c.rect(0, 0, W, H);
+    tabPath(c);
+    c.save();
+    c.translate(W, H);
+    c.rotate(Math.PI);
+    tabPath(c);
+    c.restore();
+    c.clip('evenodd');
     if (photo) {
       const s = baseScale * zoom;
       const dw = photo.width * s, dh = photo.height * s;
@@ -352,21 +530,44 @@
     }
     c.restore();
 
-    // index corners: top-left, then bottom-right rotated 180°
-    drawIndex(c);
+    // corner art: top-left, then bottom-right rotated 180°
+    t.tab(c);
     c.save();
     c.translate(W, H);
     c.rotate(Math.PI);
-    drawIndex(c);
+    t.tab(c);
     c.restore();
 
-    // thin decorative rule around the card in suit colour
+    drawCaption(c);
+
+    // thin decorative rule around the card
     roundRectPath(c, 13, 13, W - 26, H - 26, 30);
     c.lineWidth = 3;
-    c.strokeStyle = SUITS[suit].color;
+    c.strokeStyle = t.accent();
     c.stroke();
     c.restore();
   }
+
+  function refreshTitle() { title.textContent = THEMES[theme].title(); }
+
+  // ---------- theme picker ----------
+  const suitRow = document.querySelector('.suits');
+  const themeBtns = [...document.querySelectorAll('.theme')];
+  const iconSVG = {
+    seahorse: `<svg viewBox="0 0 100 100" aria-hidden="true"><path fill="${SEA.coral}" d="M14 18.5L28 16C30 8 40 3 50 7C57 10 60 18 56 26C54 29 54 31 56 33C66 40 68 54 62 66C60 72 58 78 55 82C50 80 44 74 40 66C36 58 37 48 42 42C44 38 44 34 40 31C36 28 32 27 28 26L14 25.5C11 25.5 11 18.5 14 18.5ZM42 6L44 0L47 6ZM48 7L52 2L53 9ZM63 46C73 46 75 58 65 61Z"/><path fill="none" stroke="${SEA.coral}" stroke-width="7" stroke-linecap="round" d="M57 78C58 88 54 96 46 96C39 96 37 89 42 87C45 86 47 89 45 91"/></svg>`,
+    libra: `<svg viewBox="0 0 100 100" aria-hidden="true"><path fill="none" stroke="${NIGHT.gold}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" d="M15 80L85 80M15 64L33 64C22 52 30 27 50 27C70 27 78 52 67 64L85 64"/></svg>`,
+  };
+  themeBtns.forEach((b) => {
+    const svg = iconSVG[b.dataset.theme];
+    if (svg) b.querySelector('.ico').innerHTML = svg;
+    b.addEventListener('click', () => {
+      theme = b.dataset.theme;
+      themeBtns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      suitRow.classList.toggle('hidden', theme !== 'queen');
+      refreshTitle();
+      render();
+    });
+  });
 
   // ---------- suit picker ----------
   const suitBtns = [...document.querySelectorAll('.suit')];
@@ -375,7 +576,7 @@
     b.addEventListener('click', () => {
       suit = b.dataset.suit;
       suitBtns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      title.textContent = '👑 Queen of ' + SUITS[suit].name;
+      refreshTitle();
       render();
     });
   });
@@ -506,7 +707,7 @@
     render();
     return new Promise((res) => canvas.toBlob(res, 'image/png'));
   }
-  function fileName() { return 'queen-of-' + suit + '.png'; }
+  function fileName() { return 'jheel-2026-' + THEMES[theme].file() + '.png'; }
 
   downloadBtn.addEventListener('click', async () => {
     const blob = await getBlob();
@@ -534,7 +735,7 @@
     if (!blob) return;
     const file = new File([blob], fileName(), { type: 'image/png' });
     try {
-      await navigator.share({ files: [file], title: 'My Queen card' });
+      await navigator.share({ files: [file], title: "My card from Jheel's birthday" });
     } catch (err) {
       if (err && err.name !== 'AbortError') downloadBtn.click();
     }
