@@ -95,14 +95,29 @@
 
   .themes { display: flex; gap: 8px; width: min(100%, 380px); background: rgba(0, 0, 0, .22); padding: 5px; border-radius: 18px; }
   .theme {
-    flex: 1; min-height: 50px; border: 0; border-radius: 14px; cursor: pointer;
-    background: transparent; color: #fff; font: 700 16px/1 inherit; font-family: inherit;
-    display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 6px;
+    flex: 1; min-height: 58px; border: 0; border-radius: 14px; cursor: pointer;
+    background: transparent; color: #fff; font: 700 13px/1 inherit; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4px 2px;
     transition: background .15s, color .15s;
   }
   .theme .ico { font-size: 20px; display: inline-grid; place-items: center; width: 24px; height: 24px; }
   .theme .ico svg { width: 24px; height: 24px; }
   .theme[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 3px 10px rgba(0, 0, 0, .25); }
+  .tags-wrap { width: min(100%, 380px); display: flex; flex-direction: column; gap: 8px; }
+  .tags-label { font-size: 14px; font-weight: 600; opacity: .85; text-align: center; }
+  .tags { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .tag {
+    min-height: 48px; border-radius: 12px; border: 3px solid transparent; cursor: pointer;
+    font: 800 13px/1.1 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; padding: 4px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .tag[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245, 201, 106, .35); }
+  .t-classic { background: #fff; }
+  .t-classic span { background: linear-gradient(45deg, #fa7e1e, #d62976, #962fbf, #4f5bd5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .t-gradient { background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5) border-box; color: #fff; }
+  .t-dark { background: rgba(0, 0, 0, .55); color: #fff; }
+  .t-post { background: #fff; color: #262626; }
+  .t-post i { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(#fff 45%, transparent 47%), linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf); }
   .zoom { display: none; width: min(100%, 360px); align-items: center; gap: 10px; font-size: 20px; }
   .zoom.show { display: flex; }
   .zoom input { flex: 1; accent-color: var(--gold); height: 32px; }
@@ -143,6 +158,7 @@
     <button class="theme" data-theme="queen" aria-pressed="true"><span class="ico">👑</span>Queen</button>
     <button class="theme" data-theme="seahorse" aria-pressed="false"><span class="ico"></span>Seahorse</button>
     <button class="theme" data-theme="libra" aria-pressed="false"><span class="ico"></span>Libra</button>
+    <button class="theme" data-theme="wingspan" aria-pressed="false"><span class="ico"></span>Wingspan</button>
   </div>
 
   <div class="stage">
@@ -172,6 +188,16 @@
     <button class="suit" data-suit="diamonds" aria-pressed="false" aria-label="Diamonds"></button>
     <button class="suit" data-suit="clubs" aria-pressed="false" aria-label="Clubs"></button>
     <button class="suit" data-suit="spades" aria-pressed="false" aria-label="Spades"></button>
+  </div>
+
+  <div class="tags-wrap">
+    <div class="tags-label">📍 Location tag</div>
+    <div class="tags" role="group" aria-label="Pick a location tag style">
+      <button class="tag t-classic" data-tag="classic" aria-pressed="true"><span>Classic</span></button>
+      <button class="tag t-gradient" data-tag="gradient" aria-pressed="false">Gradient</button>
+      <button class="tag t-dark" data-tag="dark" aria-pressed="false">Dark</button>
+      <button class="tag t-post" data-tag="post" aria-pressed="false"><i></i>Post</button>
+    </div>
   </div>
 
   <input type="file" id="cameraInput" accept="image/*" capture="environment">
@@ -310,6 +336,35 @@
   const SEAHORSE_RIDGES = new Path2D('M43 47Q52 49 61 45M41 55Q52 57 63 53M42 63Q52 65 62 62M46 71Q52 73 59 71M66 50L70 51M66 55L70 56');
   const LIBRA = new Path2D('M15 80L85 80M15 64L33 64C22 52 30 27 50 27C70 27 78 52 67 64L85 64');
 
+  const BIRD_BODY = new Path2D('M6 35L19 30C21 22 28 18 34 19C41 20 45 26 47 31C56 33 66 38 76 45L97 55L95 60L80 58C74 63 64 66 54 66C42 66 30 61 24 52C22 46 22 41 20 38L6 36Z');
+  const BIRD_WING = new Path2D('M44 38C56 37 70 44 80 54C70 58 58 58 50 54C44 50 41 44 44 38Z');
+  const BIRD_BREAST = new Path2D('M27 40C31 50 40 58 52 60C42 63 31 59 26 51C24 47 24 43 27 40Z');
+  const BIRD_PERCH = new Path2D('M44 64L42 77M52 65L53 77M18 78L84 78');
+  const PIN = new Path2D('M50 96C50 96 16 60 16 38A34 34 0 0 1 84 38C84 60 50 96 50 96ZM50 24A14 14 0 1 0 50 52A14 14 0 1 0 50 24Z');
+
+  function drawBird(c, x, y, k, perch = true) {
+    c.save();
+    c.translate(x, y);
+    c.scale(k, k);
+    c.fillStyle = WING.teal; c.fill(BIRD_BODY);
+    c.fillStyle = WING.deep; c.fill(BIRD_WING);
+    c.fillStyle = WING.orange; c.fill(BIRD_BREAST);
+    c.fillStyle = '#1c2b2a'; c.beginPath(); c.arc(29, 27, 2.6, 0, Math.PI * 2); c.fill();
+    if (perch) { c.strokeStyle = WING.brown; c.lineWidth = 3; c.lineCap = 'round'; c.stroke(BIRD_PERCH); }
+    c.restore();
+  }
+  function drawEgg(c, cx, cy, r, color) {
+    c.save();
+    c.beginPath();
+    c.ellipse(cx, cy, r * 0.78, r, 0, 0, Math.PI * 2);
+    c.fillStyle = color;
+    c.fill();
+    c.lineWidth = 1.5;
+    c.strokeStyle = 'rgba(90,70,50,.35)';
+    c.stroke();
+    c.restore();
+  }
+
   // x,y = top-left of the 100x100 box, k = scale (1 = 100px)
   function drawSeahorse(c, x, y, k, color, bg, detail = true) {
     c.save();
@@ -361,6 +416,7 @@
 
   const SEA = { light: '#14a3a8', dark: '#0a4f7a', coral: '#ff8a6b' };
   const NIGHT = { light: '#4a2c6e', dark: '#1f1747', gold: '#f5c96a' };
+  const WING = { paper: '#f4ecd8', teal: '#3f8f8a', deep: '#2a6b67', orange: '#e9a23b', brown: '#6b5238', eggs: ['#b9dccf', '#f3d9a4', '#e7b9a6', '#cfd8ee'] };
 
   const THEMES = {
     queen: {
@@ -380,7 +436,7 @@
         drawSuit(c, suit, TAB_CX, 170, 54, color);
       },
       decorate() {},
-      caption: { bg: '#fff', fg: () => SUITS[suit].color, icon: (c, x, y, h) => drawSuit(c, suit, x + h / 2, y, h, SUITS[suit].color) },
+      icon: (c, cx, cy, h) => drawSuit(c, suit, cx, cy, h * 0.8, SUITS[suit].color),
     },
     seahorse: {
       title: () => '🌊 Seahorse Card',
@@ -401,7 +457,7 @@
         c.lineWidth = 2;
         borderSpots(23).forEach(([x, y], i) => { c.beginPath(); c.arc(x, y, 3 + (i * 7 % 4), 0, Math.PI * 2); c.stroke(); });
       },
-      caption: { bg: '#fff', fg: () => SEA.dark, icon: (c, x, y, h) => drawSeahorse(c, x - h * 0.12, y - h / 2, h / 100, SEA.coral, '#fff', false) },
+      icon: (c, cx, cy, h) => drawSeahorse(c, cx - h * 0.42, cy - h * 0.5, h / 100, SEA.coral, '#fff', false),
     },
     libra: {
       title: () => '✨ Libra Card',
@@ -418,12 +474,31 @@
       decorate(c) {
         borderSpots(29).forEach(([x, y], i) => drawSparkle(c, x, y, 4 + (i * 5 % 4), 'rgba(245,201,106,.85)'));
       },
-      caption: { bg: NIGHT.dark, fg: () => NIGHT.gold, icon: (c, x, y, h) => drawLibra(c, x - h * 0.15, y - h * 0.55, h / 100 * 1.1, NIGHT.gold) },
+      avatarBg: NIGHT.dark,
+      icon: (c, cx, cy, h) => drawLibra(c, cx - h * 0.55, cy - h * 0.6, h / 100 * 1.1, NIGHT.gold),
+    },
+    wingspan: {
+      title: () => '🪶 Wingspan Card',
+      file: () => 'wingspan-card',
+      accent: () => WING.brown,
+      border: () => WING.paper,
+      placeholder: ['#d9eee5', '#f5e4c3'],
+      bigIcon(c) { c.globalAlpha = 0.22; drawBird(c, W / 2 - 165, H / 2 - 290, 3.3); c.globalAlpha = 1; },
+      tab(c) {
+        drawBird(c, TAB_CX - 52 * 1.05, 44, 1.05);
+        WING.eggs.slice(0, 3).forEach((col, i) => drawEgg(c, TAB_CX - 25 + i * 25, 168, 12, col));
+      },
+      decorate(c) {
+        borderSpots(22).forEach(([x, y], i) => drawEgg(c, x, y, 6, WING.eggs[i % 4]));
+      },
+      icon: (c, cx, cy, h) => drawBird(c, cx - h * 0.52, cy - h * 0.5, h / 100, false),
     },
   };
   let theme = 'queen';
   const TAB_CX = 30 + (TAB.w - 30) / 2 + 2;
-  const CAPTION = "Jheel's Birthday 2026";
+  const PLACE = 'GOLDEN GATE PARK';
+  const EVENT = "Jheel's Birthday 2026";
+  let tag = 'classic';
 
   // evenly spaced points along the middle of the border, skipping the two corner tabs
   function borderSpots(n) {
@@ -470,29 +545,90 @@
     c.closePath();
   }
 
-  function drawCaption(c) {
-    const cap = THEMES[theme].caption;
-    const h = 54, icon = 30, gap = 10, pad = 22;
-    c.font = 'italic 600 29px Georgia, "Times New Roman", Times, serif';
-    const tw = c.measureText(CAPTION).width;
-    const w = pad * 2 + icon + gap + tw;
-    // centre in the space left of the bottom-right corner tab
-    const cx = (INNER.x + (W - TAB.w)) / 2;
-    const cy = INNER.y + INNER.h - 46;
-    const x = cx - w / 2;
+  function igGradient(c, x, y, w, h) {
+    const g = c.createLinearGradient(x, y + h, x + w, y);
+    g.addColorStop(0, '#feda75');
+    g.addColorStop(0.25, '#fa7e1e');
+    g.addColorStop(0.5, '#d62976');
+    g.addColorStop(0.75, '#962fbf');
+    g.addColorStop(1, '#4f5bd5');
+    return g;
+  }
+  function drawPin(c, x, y, h, fill) {
     c.save();
-    c.shadowColor = 'rgba(0,0,0,.28)';
-    c.shadowBlur = 10;
-    c.shadowOffsetY = 3;
-    roundRectPath(c, x, cy - h / 2, w, h, h / 2);
-    c.fillStyle = cap.bg;
-    c.fill();
+    c.translate(x, y);
+    c.scale(h / 100, h / 100);
+    c.fillStyle = fill;
+    c.fill(PIN, 'evenodd');
     c.restore();
-    cap.icon(c, x + pad, cy, icon);
-    c.fillStyle = cap.fg();
-    c.textAlign = 'left';
+  }
+
+  // Instagram-style location tag, centred in the space left of the bottom-right corner tab
+  function drawTag(c) {
+    const SANS = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif';
+    const cx = (INNER.x + (W - TAB.w)) / 2;
+    const bottom = INNER.y + INNER.h - 18;
+    c.save();
     c.textBaseline = 'middle';
-    c.fillText(CAPTION, x + pad + icon + gap, cy + 1);
+    c.textAlign = 'left';
+
+    if (tag === 'post') {
+      // looks like the header of an Instagram post: avatar ring, username, location
+      const user = 'jheels.birthday.2026', h = 80, av = 27;
+      c.font = `700 23px ${SANS}`;
+      const w1 = c.measureText(user).width;
+      c.font = `400 20px ${SANS}`;
+      const w2 = c.measureText('Golden Gate Park').width;
+      const w = 18 + av * 2 + 14 + Math.max(w1, w2) + 22 + 30;
+      const x = cx - w / 2, y = bottom - h;
+      shadowed(c, () => { roundRectPath(c, x, y, w, h, 20); c.fillStyle = '#fff'; c.fill(); });
+      const ax = x + 18 + av, ay = y + h / 2;
+      c.beginPath(); c.arc(ax, ay, av, 0, Math.PI * 2); c.fillStyle = igGradient(c, ax - av, ay - av, av * 2, av * 2); c.fill();
+      c.beginPath(); c.arc(ax, ay, av - 3.5, 0, Math.PI * 2); c.fillStyle = '#fff'; c.fill();
+      c.beginPath(); c.arc(ax, ay, av - 6, 0, Math.PI * 2); c.fillStyle = THEMES[theme].avatarBg || '#f2f2f2'; c.fill();
+      THEMES[theme].icon(c, ax, ay, 30);
+      const tx = ax + av + 14;
+      c.fillStyle = '#262626';
+      c.font = `700 23px ${SANS}`;
+      c.fillText(user, tx, ay - 13);
+      c.font = `400 20px ${SANS}`;
+      c.fillText('Golden Gate Park', tx, ay + 15);
+      c.fillStyle = '#262626';
+      [0, 1, 2].forEach((i) => { c.beginPath(); c.arc(x + w - 30 + i * 8, ay, 2.6, 0, Math.PI * 2); c.fill(); });
+      c.restore();
+      return;
+    }
+
+    // sticker variants: pin + GOLDEN GATE PARK, with the birthday underneath
+    const pinH = 30, gap = 8, padX = 22, h = 78;
+    c.font = `800 30px ${SANS}`;
+    const w1 = c.measureText(PLACE).width;
+    c.font = `600 19px ${SANS}`;
+    const w2 = c.measureText(EVENT).width;
+    const w = padX * 2 + Math.max(pinH * 0.7 + gap + w1, w2);
+    const x = cx - w / 2, y = bottom - h;
+    const g = igGradient(c, x, y, w, h);
+    let bg, fg, sub;
+    if (tag === 'gradient') { bg = g; fg = '#fff'; sub = 'rgba(255,255,255,.92)'; }
+    else if (tag === 'dark') { bg = 'rgba(0,0,0,.55)'; fg = '#fff'; sub = 'rgba(255,255,255,.85)'; }
+    else { bg = '#fff'; fg = g; sub = '#6b6b6b'; } // classic
+    shadowed(c, () => { roundRectPath(c, x, y, w, h, 16); c.fillStyle = bg; c.fill(); }, tag !== 'dark');
+    const line1 = y + 29, rowW = pinH * 0.7 + gap + w1, rx = x + (w - rowW) / 2;
+    drawPin(c, rx - pinH * 0.15, line1 - pinH / 2, pinH, fg);
+    c.fillStyle = fg;
+    c.font = `800 30px ${SANS}`;
+    c.fillText(PLACE, rx + pinH * 0.7 + gap, line1 + 1);
+    c.fillStyle = sub;
+    c.font = `600 19px ${SANS}`;
+    c.textAlign = 'center';
+    c.fillText(EVENT, x + w / 2, y + 58);
+    c.restore();
+  }
+  function shadowed(c, fn, on = true) {
+    c.save();
+    if (on) { c.shadowColor = 'rgba(0,0,0,.28)'; c.shadowBlur = 12; c.shadowOffsetY = 3; }
+    fn();
+    c.restore();
   }
 
   function render() {
@@ -538,7 +674,7 @@
     t.tab(c);
     c.restore();
 
-    drawCaption(c);
+    drawTag(c);
 
     // thin decorative rule around the card
     roundRectPath(c, 13, 13, W - 26, H - 26, 30);
@@ -557,6 +693,7 @@
     seahorse: `<svg viewBox="0 0 100 100" aria-hidden="true"><path fill="${SEA.coral}" d="M14 18.5L28 16C30 8 40 3 50 7C57 10 60 18 56 26C54 29 54 31 56 33C66 40 68 54 62 66C60 72 58 78 55 82C50 80 44 74 40 66C36 58 37 48 42 42C44 38 44 34 40 31C36 28 32 27 28 26L14 25.5C11 25.5 11 18.5 14 18.5ZM42 6L44 0L47 6ZM48 7L52 2L53 9ZM63 46C73 46 75 58 65 61Z"/><path fill="none" stroke="${SEA.coral}" stroke-width="7" stroke-linecap="round" d="M57 78C58 88 54 96 46 96C39 96 37 89 42 87C45 86 47 89 45 91"/></svg>`,
     libra: `<svg viewBox="0 0 100 100" aria-hidden="true"><path fill="none" stroke="${NIGHT.gold}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" d="M15 80L85 80M15 64L33 64C22 52 30 27 50 27C70 27 78 52 67 64L85 64"/></svg>`,
   };
+  iconSVG.wingspan = `<svg viewBox="0 0 100 100" aria-hidden="true"><path fill="${WING.teal}" d="M6 35L19 30C21 22 28 18 34 19C41 20 45 26 47 31C56 33 66 38 76 45L97 55L95 60L80 58C74 63 64 66 54 66C42 66 30 61 24 52C22 46 22 41 20 38L6 36Z"/><path fill="${WING.orange}" d="M27 40C31 50 40 58 52 60C42 63 31 59 26 51C24 47 24 43 27 40Z"/></svg>`;
   themeBtns.forEach((b) => {
     const svg = iconSVG[b.dataset.theme];
     if (svg) b.querySelector('.ico').innerHTML = svg;
@@ -568,6 +705,14 @@
       render();
     });
   });
+
+  // ---------- location tag picker ----------
+  const tagBtns = [...document.querySelectorAll('.tag')];
+  tagBtns.forEach((b) => b.addEventListener('click', () => {
+    tag = b.dataset.tag;
+    tagBtns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  }));
 
   // ---------- suit picker ----------
   const suitBtns = [...document.querySelectorAll('.suit')];
